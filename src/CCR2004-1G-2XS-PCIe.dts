@@ -1087,12 +1087,12 @@
 
 			partition@0 {
 				reg = <0x00 0x800000>;
-				label = "boot";
+				label = "RouterBOARD Boot";
 			};
 
 			partition@1 {
-				reg = <0x800000 0x00>;
-				label = "main";
+				reg = <0x800000 0x7800000>;
+				label = "RouterBOARD Main";
 			};
 		};
 
