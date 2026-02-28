@@ -43,7 +43,7 @@ $(BUILD):
 	mkdir -p $(BUILD)
 
 # --- compile device tree ---
-$(BUILD)/CCR2004-dt-1.dtb: resources/CCR2004-dt-1.dts | $(BUILD)
+$(BUILD)/CCR2004-dt-1.dtb: src/CCR2004-1G-2XS-PCIe.dts | $(BUILD)
 	@echo "[DTC] Compiling device tree..."
 	dtc -I dts -O dtb -o $@ $<
 	@echo "      DTB = $$(wc -c < $@) bytes"
