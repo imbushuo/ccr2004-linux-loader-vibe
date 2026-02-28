@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gunzip:*)",
+      "Bash(xargs:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(curl:*)",
+      "Bash(make:*)",
+      "Bash(aarch64-linux-gnu-gcc:*)",
+      "Bash(aarch64-linux-gnu-nm:*)",
+      "Bash(aarch64-linux-gnu-objdump:*)",
+      "Bash(aarch64-linux-gnu-readelf:*)",
+      "Bash(xz:*)",
+      "Bash(xxd:*)",
+      "Bash(python3:*)",
+      "Bash(echo === System xz -9e ===:*)",
+      "Bash(dpkg:*)",
+      "Bash(apt-get source:*)",
+      "Bash(git clone:*)",
+      "Bash(grep:*)",
+      "Bash(dtc:*)"
+    ]
+  }
+}
