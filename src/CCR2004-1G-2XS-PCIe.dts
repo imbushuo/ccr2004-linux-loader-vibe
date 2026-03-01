@@ -1086,6 +1086,7 @@
 			#address-cells = <0x01>;
 			#size-cells = <0x01>;
 			clock-names = "sbclk";
+			max-onfi-timing-mode = <0x01>;
 
 			partition@0 {
 				reg = <0x00 0x800000>;

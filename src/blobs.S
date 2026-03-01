@@ -1,5 +1,5 @@
 /*
- * Embed the xz-compressed kernel and DTB as read-only data.
+ * Embed the xz-compressed kernel, initramfs, and DTB as read-only data.
  * Paths are relative to the project root (where make is invoked).
  */
 
@@ -10,6 +10,14 @@ _kernel_xz_start:
 	.incbin "build/kernel.xz"
 	.global _kernel_xz_end
 _kernel_xz_end:
+
+	.section ".rodata.initramfs", "a"
+	.balign 4
+	.global _initramfs_xz_start
+_initramfs_xz_start:
+	.incbin "build/initramfs.xz"
+	.global _initramfs_xz_end
+_initramfs_xz_end:
 
 	.section ".rodata.dtb", "a"
 	.balign 8

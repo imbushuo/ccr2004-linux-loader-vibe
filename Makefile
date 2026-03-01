@@ -54,6 +54,12 @@ $(BUILD)/kernel.xz: resources/Image | $(BUILD)
 	xz --check=crc32 -9e -c $< > $@
 	@echo "      kernel.xz = $$(wc -c < $@) bytes"
 
+# --- compress initramfs with xz ---
+$(BUILD)/initramfs.xz: resources/initramfs.cpio | $(BUILD)
+	@echo "[XZ]  Compressing initramfs..."
+	xz --check=crc32 -9e -c $< > $@
+	@echo "      initramfs.xz = $$(wc -c < $@) bytes"
+
 # --- compile ---
 $(BUILD)/start.o: $(SRC)/start.S | $(BUILD)
 	$(CC) $(ASFLAGS) -c $< -o $@
@@ -85,7 +91,7 @@ $(BUILD)/fdt_rw.o: $(FDT)/fdt_rw.c | $(BUILD)
 $(BUILD)/fdt_wip.o: $(FDT)/fdt_wip.c | $(BUILD)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD)/blobs.o: $(SRC)/blobs.S $(BUILD)/kernel.xz $(BUILD)/CCR2004-dt-1.dtb | $(BUILD)
+$(BUILD)/blobs.o: $(SRC)/blobs.S $(BUILD)/kernel.xz $(BUILD)/initramfs.xz $(BUILD)/CCR2004-dt-1.dtb | $(BUILD)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
 # --- link ---

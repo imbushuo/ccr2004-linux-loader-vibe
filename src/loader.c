@@ -24,6 +24,9 @@
 #define KERNEL_DEST     ((uintptr_t)0x02000000)   /* 32 MB, 2 MB aligned */
 #define KERNEL_MAX_SIZE (32u * 1024u * 1024u)     /* 32 MB output buf    */
 
+#define PAGE_SIZE       4096u
+#define ALIGN_UP(x, a)  (((x) + (a) - 1u) & ~((a) - 1u))
+
 #define ARM64_IMAGE_MAGIC 0x644d5241u  /* "ARM\x64" LE */
 
 static const char bootargs[] =
@@ -35,6 +38,8 @@ static const char bootargs[] =
  * ----------------------------------------------------------------------- */
 extern uint8_t _kernel_xz_start[];
 extern uint8_t _kernel_xz_end[];
+extern uint8_t _initramfs_xz_start[];
+extern uint8_t _initramfs_xz_end[];
 extern uint8_t _dtb_start[];
 extern uint8_t _dtb_end[];
 
@@ -133,9 +138,10 @@ exception_dump(uint64_t type, uint64_t esr, uint64_t elr, uint64_t far_addr)
 }
 
 /* -----------------------------------------------------------------------
- * Patch DTB /chosen node: set bootargs, remove stale initrd props.
+ * Patch DTB /chosen node: set bootargs, set initrd location.
  * ----------------------------------------------------------------------- */
-static void patch_dtb(void *dtb, size_t buf_size)
+static void patch_dtb(void *dtb, size_t buf_size,
+		      uint64_t initrd_start, uint64_t initrd_end)
 {
 	int err;
 
@@ -150,7 +156,6 @@ static void patch_dtb(void *dtb, size_t buf_size)
 
 	int chosen = fdt_path_offset(dtb, "/chosen");
 	if (chosen < 0) {
-		/* /chosen doesn't exist, create it */
 		chosen = fdt_add_subnode(dtb, 0, "chosen");
 		if (chosen < 0) {
 			uart_puts("WARN: cannot create /chosen: ");
@@ -168,9 +173,9 @@ static void patch_dtb(void *dtb, size_t buf_size)
 		uart_putchar('\n');
 	}
 
-	/* Remove stale initrd properties (zeros that confuse the kernel) */
-	fdt_delprop(dtb, chosen, "linux,initrd-start");
-	fdt_delprop(dtb, chosen, "linux,initrd-end");
+	/* Set initrd location (compressed – kernel decompresses it) */
+	fdt_setprop_u64(dtb, chosen, "linux,initrd-start", initrd_start);
+	fdt_setprop_u64(dtb, chosen, "linux,initrd-end", initrd_end);
 
 	/* Remove empty bootargs-append */
 	fdt_delprop(dtb, chosen, "bootargs-append");
@@ -226,20 +231,18 @@ void loader_main(void)
 	if (boot_el == 2)
 		kernel_el = ask_boot_el();
 
-	size_t kxz_size = (size_t)(_kernel_xz_end - _kernel_xz_start);
-	size_t dtb_size = (size_t)(_dtb_end        - _dtb_start);
+	size_t kxz_size  = (size_t)(_kernel_xz_end    - _kernel_xz_start);
+	size_t ixz_size  = (size_t)(_initramfs_xz_end - _initramfs_xz_start);
+	size_t dtb_size  = (size_t)(_dtb_end           - _dtb_start);
 
-	uart_puts("Kernel.xz: "); uart_puthex((uintptr_t)_kernel_xz_start);
+	uart_puts("Kernel.xz:    "); uart_puthex((uintptr_t)_kernel_xz_start);
 	uart_puts(" ("); uart_putdec(kxz_size); uart_puts(" bytes)\n");
 
-	uart_puts("DTB:       "); uart_puthex((uintptr_t)_dtb_start);
+	uart_puts("Initramfs.xz: "); uart_puthex((uintptr_t)_initramfs_xz_start);
+	uart_puts(" ("); uart_putdec(ixz_size); uart_puts(" bytes)\n");
+
+	uart_puts("DTB:           "); uart_puthex((uintptr_t)_dtb_start);
 	uart_puts(" ("); uart_putdec(dtb_size); uart_puts(" bytes)\n");
-
-	/* ---- copy DTB and patch /chosen ---- */
-	uart_puts("Copying DTB to "); uart_puthex(DTB_DEST); uart_puts("\n");
-	memcpy((void *)DTB_DEST, _dtb_start, dtb_size);
-
-	patch_dtb((void *)DTB_DEST, DTB_MAX_SIZE);
 
 	/* ---- decompress kernel ---- */
 	uart_puts("Decompressing kernel to "); uart_puthex(KERNEL_DEST); uart_puts("\n");
@@ -303,6 +306,23 @@ void loader_main(void)
 		uart_puts("Relocating Image to "); uart_puthex(kernel_entry); uart_puts("\n");
 		memmove((void *)kernel_entry, (void *)KERNEL_DEST, kernel_size);
 	}
+
+	/*
+	 * Place compressed initramfs right after the kernel's reserved
+	 * region (KERNEL_DEST + image_size), page-aligned.
+	 */
+	uintptr_t initrd_start = ALIGN_UP(KERNEL_DEST + (uintptr_t)image_size, PAGE_SIZE);
+	uintptr_t initrd_end   = initrd_start + ixz_size;
+
+	uart_puts("Copying initramfs to "); uart_puthex(initrd_start); uart_puts("\n");
+	memcpy((void *)initrd_start, _initramfs_xz_start, ixz_size);
+
+	/* ---- copy DTB and patch /chosen (last, after all addresses known) ---- */
+	uart_puts("Copying DTB to "); uart_puthex(DTB_DEST); uart_puts("\n");
+	memcpy((void *)DTB_DEST, _dtb_start, dtb_size);
+
+	patch_dtb((void *)DTB_DEST, DTB_MAX_SIZE,
+		  (uint64_t)initrd_start, (uint64_t)initrd_end);
 
 	/* ---- boot ---- */
 	uart_puts("Booting kernel @ "); uart_puthex(kernel_entry);
