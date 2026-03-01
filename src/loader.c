@@ -309,9 +309,11 @@ void loader_main(void)
 
 	/*
 	 * Place compressed initramfs right after the kernel's reserved
-	 * region (KERNEL_DEST + image_size), page-aligned.
+	 * region.  Per the boot protocol the kernel owns memory from
+	 * KERNEL_DEST to KERNEL_DEST + text_offset + image_size.
 	 */
-	uintptr_t initrd_start = ALIGN_UP(KERNEL_DEST + (uintptr_t)image_size, PAGE_SIZE);
+	uintptr_t kernel_end   = KERNEL_DEST + (uintptr_t)text_offset + (uintptr_t)image_size;
+	uintptr_t initrd_start = ALIGN_UP(kernel_end, PAGE_SIZE);
 	uintptr_t initrd_end   = initrd_start + ixz_size;
 
 	uart_puts("Copying initramfs to "); uart_puthex(initrd_start); uart_puts("\n");
