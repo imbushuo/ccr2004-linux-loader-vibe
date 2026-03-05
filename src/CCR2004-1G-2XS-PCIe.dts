@@ -279,6 +279,8 @@
 				lines-initial-vals = <0x00>;
 				cache-jiffies = <0x0a>;
 				gpio-start = <0x64>;
+				#gpio-cells = <2>;
+				phandle = <0x20>;  /* pick an unused phandle */
 			};
 
 			i2c-mux@70 {
@@ -608,6 +610,19 @@
 		serdes {
 			compatible = "annapurna-labs,al-serdes";
 			reg = <0x00 0xfd8c0000 0x00 0x2400>;
+		};
+
+		serdes-avg-hs {
+			compatible = "annapurna-labs,al-serdes-avg-complex-hs";
+			
+			#address-cells = <0x02>;
+			reg = <0x0 0xfd9c0000 0x0 0x20000>;
+			status = "okay";
+
+			lane0 { };
+			lane1 { };
+			lane2 { };
+			lane3 { };
 		};
 
 		mc {
@@ -1190,7 +1205,7 @@
 				port0 {
 					status = "enabled";
 					mode = "25g-10g-auto-detect";
-					i2c-id = <0x04>;
+					i2c-id = <0x02>;
 					serdes-grp = <0x04>;
 					serdes-lane = <0x00>;
 					freeze-serdes-params = "enable";
@@ -1202,12 +1217,19 @@
 						link-training = "disabled";
 						fec = "disabled";
 					};
+
+					link_manager {
+						mod-def0-gpios = <0x20 2 1>;  /* pin 2, active-low */
+						los-gpios      = <0x20 8 0>;  /* pin 8, active-high */
+						tx-fault-gpios = <0x20 4 0>;  /* pin 4, active-high */
+						tx-disable-gpios = <0x20 6 0>; /* pin 6, active-high */
+					};
 				};
 
 				port2 {
 					status = "enabled";
 					mode = "25g-10g-auto-detect";
-					i2c-id = <0x04>;
+					i2c-id = <0x03>;
 					serdes-grp = <0x04>;
 					serdes-lane = <0x01>;
 					freeze-serdes-params = "enable";
@@ -1218,6 +1240,13 @@
 						auto-neg = "disabled";
 						link-training = "disabled";
 						fec = "disabled";
+					};
+
+					link_manager {
+						mod-def0-gpios = <0x20 3 1>;  /* pin 3, active-low */
+						los-gpios      = <0x20 9 0>;  /* pin 9, active-high */
+						tx-fault-gpios = <0x20 5 0>;  /* pin 5, active-high */
+						tx-disable-gpios = <0x20 7 0>; /* pin 7, active-high */
 					};
 				};
 			};

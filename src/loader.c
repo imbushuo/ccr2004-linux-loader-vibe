@@ -31,7 +31,7 @@
 
 static const char bootargs[] =
 	"console=ttyS0,115200 console=ttyS1 "
-	"earlycon=uart8250,mmio32,0xfd883000,115200n8 earlyprintk";
+	"earlycon=uart8250,mmio32,0xfd883000,115200n8 earlyprintk loglevel=7 root=/dev/ram0";
 
 /* -----------------------------------------------------------------------
  * Symbols from blobs.S / linker script
